@@ -14,7 +14,7 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
 
   val dbg = true
 
-  def debug(message: String) = {
+  def debug(message: String): Unit = {
     if (dbg)
       println(message)
   }
@@ -33,15 +33,15 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
     sc.stop()
   }
 
-  def processEvents(events: List[Event], connection: Connection) = {
+  def processEvents(events: List[Event], connection: Connection): Unit = {
 
-    val eventsTable: Table = setupTable(connection, "events", (_.addFamily(new HColumnDescriptor(Bytes.toBytes("ev")))))
-    val processesTable: Table = setupTable(connection, "processes", (_.addFamily(new HColumnDescriptor(Bytes.toBytes("ps")))))
-    val processSecondaryIndexTable: Table = setupTable(connection, "processes-index", (_.addFamily(new HColumnDescriptor(Bytes.toBytes("pi")))))
-    val orphanedEventsTable: Table = setupTable(connection, "orphaned-events", (_.addFamily(new HColumnDescriptor(Bytes.toBytes("oe")))))
+    val eventsTable: Table = setupTable(connection, "events", _.addFamily(new HColumnDescriptor(Bytes.toBytes("ev"))))
+    val processesTable: Table = setupTable(connection, "processes", _.addFamily(new HColumnDescriptor(Bytes.toBytes("ps"))))
+    val processSecondaryIndexTable: Table = setupTable(connection, "processes-index", _.addFamily(new HColumnDescriptor(Bytes.toBytes("pi"))))
+    val orphanedEventsTable: Table = setupTable(connection, "orphaned-events", _.addFamily(new HColumnDescriptor(Bytes.toBytes("oe"))))
 
 
-    // FIXME this currently only checks for a single orphans, but what about multiple orphans?
+    // FIXME this currently only checks for a single orphan, but what about multiple orphans, i.e. multiple children that share the same missing parent process?
 
     def reconcile(processesTable: Table, orphanedEventsTable: Table, ev: Event) = {
       val lookupOrphanRes = orphanedEventsTable.get(new Get(Bytes.toBytes(ev.id)).setMaxVersions(1).addFamily(Bytes.toBytes("oe")))
@@ -83,10 +83,9 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
           throw new IllegalStateException("Oops. Merge source process does not exists for id: "+Bytes.toString(mergeSourceProcessId))
 
         val affectedEventIds = mergeSourceProcessRes.getFamilyMap(Bytes.toBytes("ps")).asScala.map {
-          case (q, v) => {
+          case (q, v) =>
             println("xq=" + _i(q) + " v=" + _i(v))
             q
-          }
         }
 
         // - Put the affected ids into merge_target (Process)
@@ -214,10 +213,9 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
 
         }
       } else {
-        // FIXME Deal with an unspecified predecessor, otherwise called root
+        // Deal with an unspecified predecessor, otherwise called root
         val rowKey = Bytes.toBytes(createUniqueId)
         createProcessAndIndex(ev, rowKey)
-
       }
 
       // ----
@@ -227,8 +225,6 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
       if (checkForOrphan)
         reconcile(processesTable, orphanedEventsTable, ev)
 
-        // Find process and maintainProcessReference
-        // FIXME Has this not been implemented yet?
 
         // ---
     }
@@ -236,12 +232,9 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
 
     val started = System.currentTimeMillis()
 
-    //eventsTable.getScanner(Scan)
 
     events.foreach(processNewEvent)
 
-    // FIXME Write reconcilation code
-    // Deal with two processes that belong together
 
     println("Before close " + (System.currentTimeMillis() - started))
 
