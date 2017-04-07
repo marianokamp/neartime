@@ -11,9 +11,6 @@ import org.apache.spark.SparkContext
 import collection.JavaConverters._
 import scala.collection.mutable
 
-/**
-  * Created by mkamp on 04/04/2017.
-  */
 class NeartimeTestSuite extends FunSuite with BeforeAndAfterAll {
 
 

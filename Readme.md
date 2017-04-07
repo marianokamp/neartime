@@ -248,6 +248,9 @@ As a result the sequence now looks the same as if it would have never been broke
 ![Intact Sequence](assets/intact_sequence.png)
 
 
+### Testcases
+
+[Test Suite](https://github.com/marianokamp/neartime/blob/master/src/test/scala/neartime/NeartimeTestSuite.scala)
 
 ### Storing the events in HBase
 Given the distributed nature of the event emissions and anticipated large volumes of events, 
