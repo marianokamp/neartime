@@ -28,7 +28,6 @@ trait HBaseApp {
     }
 
     admin.createTable(initialization(new HTableDescriptor(tableName)))
-
     connection.getTable(tableName)
 
   }
@@ -40,7 +39,14 @@ trait HBaseApp {
     ConnectionFactory.createConnection(hbaseConfig)
   }
 
-  def createUniqueId = getMd5(System.nanoTime().toString)
+  def createUniqueId = {
+
+    val time = System.nanoTime()
+
+    // add original key to md5
+    // to counteract hash collisions
+    getMd5(time.toString)+time.toString()
+  }
 
   private def getMd5(inputStr: String): String = {
     val md: MessageDigest = MessageDigest.getInstance("MD5")
