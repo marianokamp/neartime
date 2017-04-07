@@ -125,7 +125,9 @@ Now continuing with event D, skipping event C for the time being, things become 
 |B|P1|
 
 Looking up the predecessor event C fails. So the only sensible thing to do is to create a new process, 
-even though it is clear that the current event does point to a predecessor and therefore cannot be the root of a sequence. Also the processes index must be maintained as well. 
+even though it is clear that the current event does point to a predecessor and therefore cannot be the root of a sequence. 
+
+Also the processes index must be maintained as well. 
 
 **Processes**
 
@@ -143,7 +145,7 @@ even though it is clear that the current event does point to a predecessor and t
 |**D**|**P2**|
 
 But because it is clear that the current event is pointing to a predecessor or parent, that does not exist, the current event is orphaned. 
-To avoid unspecific and wide sweeping cleanup activities afterwards we take note of the missing parent.
+To avoid unspecific and wide sweeping cleanup activities later on we take note of the missing parent.
 
 **Orphaned-Events**
 
@@ -153,8 +155,9 @@ To avoid unspecific and wide sweeping cleanup activities afterwards we take note
 
 ---
 
-Processing event E is now more of the same, except that its predecessor relationship is now pointing to a disconnected predecessor,
-but this is transparent to event E.
+Processing event E is now more of the same, except that its predecessor relationship is now pointing to a disconnected predecessor.
+
+This, however, is transparent to event E and so no special case logic is needed here.
 
 **Events**
 
@@ -190,7 +193,7 @@ but this is transparent to event E.
 
 No change to the orphaned events.
 
-We now have two disconnected sequences as illustrated earlier already: 
+We now have two disconnected sequences as illustrated earlier already, and here repeated for convenience: 
 
 ![Broken Sequence](assets/broken_sequence.png)
 

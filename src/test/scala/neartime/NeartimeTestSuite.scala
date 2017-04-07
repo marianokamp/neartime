@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.SparkContext
 
 import collection.JavaConverters._
+import scala.collection.mutable
 
 /**
   * Created by mkamp on 04/04/2017.
@@ -19,9 +20,8 @@ class NeartimeTestSuite extends FunSuite with BeforeAndAfterAll {
   val sc: SparkContext = setupSpark
   val connection: Connection = openHBaseConnection
 
-  override protected def afterAll() = {
+  override protected def afterAll(): Unit = {
 
-    println("Calling afterAll")
     closeHBaseConnection(connection)
     sc.stop()
 
@@ -40,7 +40,6 @@ class NeartimeTestSuite extends FunSuite with BeforeAndAfterAll {
     val pi = getRecordAsMap("processes-index", "pi", Bytes.toBytes(10)).map{case(q,v) => (_s(q), _s(v))}
     assert(pi.size == 1)
     val processId = pi("process-id")
-    println("process-id::::::"+processId)
 
     val p = getRecordAsMap("processes", "ps", Bytes.toBytes(processId)).map{case(q,v) => (_i(q), v)}
     assert(p.size == 1)
@@ -115,7 +114,6 @@ class NeartimeTestSuite extends FunSuite with BeforeAndAfterAll {
 
   private def getValue(id: Array[Byte], tableName: String, familyName: String, qualifier: String) = {
     val value = connection.getTable(TableName.valueOf(tableName)).get(new Get(id)).getValue(Bytes.toBytes(familyName), Bytes.toBytes(qualifier))
-    print("value="+value)
     value
   }
 
@@ -127,10 +125,9 @@ class NeartimeTestSuite extends FunSuite with BeforeAndAfterAll {
     count
   }
 
-  def getRecordAsMap(tableName: String, family: String, rowKey: Array[Byte]) = {
-    println("getRAM: "+tableName+" "+family+" "+rowKey)
+  def getRecordAsMap(tableName: String, family: String, rowKey: Array[Byte]): mutable.Map[Array[Byte], Array[Byte]] = {
     val res = connection.getTable(TableName.valueOf(tableName)).get(new Get(rowKey).setMaxVersions(1).addFamily(_b(family)))
-    if (res.isEmpty())
+    if (res.isEmpty)
       throw new IllegalStateException
     res.getFamilyMap(_b(family)).asScala
   }
