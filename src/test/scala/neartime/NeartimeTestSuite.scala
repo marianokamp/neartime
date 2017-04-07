@@ -42,9 +42,9 @@ class NeartimeTestSuite extends FunSuite with BeforeAndAfterAll {
     val processId = pi("process-id")
     println("process-id::::::"+processId)
 
-    val p = getRecordAsMap("processes", "ps", Bytes.toBytes(processId)).map{case(q,v) => (_i(q), _i(v))}
+    val p = getRecordAsMap("processes", "ps", Bytes.toBytes(processId)).map{case(q,v) => (_i(q), v)}
     assert(p.size == 1)
-    assert(p(10) == 10) // key 10 == 10
+    assert(p.contains(10))
 
   }
 
