@@ -98,7 +98,7 @@ Also, using its predecessor's event ID the containing process is looked up and i
 **Events**
 
 |ID | Predecessor ID|Time|Payload|
-|---|---------------|----|
+|---|---------------|----|-------|
 |A|- (root)|t1|Ref-A-99|
 |**B**|**A**|**t2**|**Ref-B-88**|
 
@@ -176,7 +176,7 @@ This, however, is transparent to event E and so no special case logic is needed 
 |A|- (root)|t1|Ref-A-99|
 |B|A|t2|Ref-B-88|
 |D|C|t3|Ref-D-66
-|**E**|**C**|**t4**|**Ref-E-55|
+|**E**|**C**|**t4**|**Ref-E-55**|
 
 
 **Processes-Index**
