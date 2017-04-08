@@ -47,7 +47,12 @@ _Consider the case of an order status with a Telco.
 Knowing that the service technician visit to the customer's house is scheduled for tomorrow,
 say Event E, is still helpful information, even though the status can't tell us when the order was received._
 
-### Step by step
+Dealing with process events and incomplete processes can be done while writing the process events
+or when querying the process events. 
+
+We will first look at the approach to maintain the process view when writing, subsequently when querying.
+
+### Maintaining process view while writing - Step by step
 
 Let's go back to the broken sequence and consider this scenario step by step.
 
@@ -62,9 +67,14 @@ a lookup table, secondary index processes-index is maintained as well.
 
 **Events**
 
-|ID | Predecessor ID|Time|
-|---|---------------|----|
-|A|- (root)|t1|
+|ID | Predecessor ID|Time|Payload|
+|---|---------------|----|-------|
+|A|- (root)|t1|Ref-A-99|
+
+The Payload from above contains arbitrary information from a specific event that may be used in a status visualisation
+or for cross-referencing/lookup. A customer number or order ID or step description would be example payloads. 
+It can also be used to lookup an event (and associated process).
+
 
 **Processes-Index**
 
@@ -87,10 +97,10 @@ Also, using its predecessor's event ID the containing process is looked up and i
 
 **Events**
 
-|ID | Predecessor ID|Time|
+|ID | Predecessor ID|Time|Payload|
 |---|---------------|----|
-|A|- (root)|t1|
-|**B**|**A**|**t2**|
+|A|- (root)|t1|Ref-A-99|
+|**B**|**A**|**t2**|**Ref-B-88**|
 
 **Processes-Index**
 
@@ -111,11 +121,11 @@ Now continuing with event D, skipping event C for the time being, things become 
 
 **Events**
 
-|ID | Predecessor ID|Time|
-|---|---------------|----|
-|A|- (root)|t1|
-|B|A|t2|
-|**D**|**C**|**t3**|
+|ID | Predecessor ID|Time|Payload|
+|---|---------------|----|-------|
+|A|- (root)|t1|Ref-A-99|
+|B|A|t2|Ref-B-88|
+|**D**|**C**|**t3**|**Ref-D-66**|
 
 **Processes-Index**
 
@@ -161,12 +171,12 @@ This, however, is transparent to event E and so no special case logic is needed 
 
 **Events**
 
-|ID | Predecessor ID|Time|
-|---|---------------|----|
-|A|- (root)|t1|
-|B|A|t2|
-|D|C|t3|
-|**E**|**C**|**t4**|
+|ID | Predecessor ID|Time|Payload|
+|---|---------------|----|-------|
+|A|- (root)|t1|Ref-A-99|
+|B|A|t2|Ref-B-88|
+|D|C|t3|Ref-D-66
+|**E**|**C**|**t4**|**Ref-E-55|
 
 
 **Processes-Index**
@@ -205,13 +215,13 @@ Writing the event itself happens as before:
 
 **Events**
 
-|ID | Predecessor ID|Time|
-|---|---------------|----|
-|A|- (root)|t1|
-|B|A|t2|
-|D|C|t3|
-|E|D|t4|
-|**C**|**B**|**t5**|
+|ID | Predecessor ID|Time|Payload|
+|---|---------------|----|-------|
+|A|- (root)|t1|Ref-A-99|
+|B|A|t2|Ref-B-88|
+|D|C|t3|Ref-D-66|
+|E|D|t4|Ref-E-55|
+|**C**|**B**|**t5**|Ref-C-77|
 
 Except after each successful write of a new event the orphaned events are checked and 
 hence here it is detected that we were waiting for event C.
@@ -252,6 +262,21 @@ As a result the sequence now looks the same as if it would have never been broke
 
 [Test Suite](https://github.com/marianokamp/neartime/blob/master/src/test/scala/neartime/NeartimeTestSuite.scala)
 
+### Maintaining process view while querying - Step by step
+
+### Contrasting both approaches
+
+Let's first look at shared characteristics of both approaches. It is necessary in both cases
+to have constant time access or better (O(1) or O(log(n))), 
+given that events are usually counted in the hundred thousands or hundred millions. The reconciliation may only
+impact a small number of events and even for those the majority may be reconciled within in seconds, but it may necessary to 
+consider if some events may only be processed after days or weeks or may get lost completely.
+
+Obviously the write oriented approach makes querying easier and vice versa. 
+The overall complexity of the query oriented approach is smaller, but given that it shifts the harder part of the 
+logic to the query side it is necessary to consider the tools and skills available on the query side. 
+
+
 ### Storing the events in HBase
 Given the distributed nature of the event emissions and anticipated large volumes of events, 
 the data would be transmitted through Kafka and stored in HBase.
@@ -261,8 +286,23 @@ the data would be transmitted through Kafka and stored in HBase.
 
 ### Access complexity
 
-### Alternative approaches
+### Candidates for alternative approaches
 
+- RDBMS
+- Global Sequences
+- Global fully qualified composite keys
 
+Using some global ID in the payload to associate events is often not straight forward. For one all systems that are part of the processing must be able
+to emit such global IDs and you may not have that much control over them. 
+But also, non-trivial processes may cross boundaries, that are not captured by a single ID. 
 
+_In our Telco example the customer creation and overall order management would happen in a [BSS](https://en.wikipedia.org/wiki/Business_support_system) System, 
+that deals with commercial orders, contracts, products and customers. The actual network provisioning is happening on the [OSS](https://en.wikipedia.org/wiki/Operations_support_system) side however,
+where the entities are network elements and the commercial entities are not known._
+
+_Also the granularity of a global ID may not match our needs. The initial steps of a process may deal with a bulk order submitted by an external 
+sales organisation. We want to track the reception and unpacking of those bulk orders, 
+but at the time the underlying order numbers are not known and the state needs to applied to many events as a predecessor._
+
+### Alternative approaches that work
 
