@@ -1,5 +1,8 @@
-## Motivation
-### Monitoring of event processing
+# Dealing with temporary incomplete state in a neartime scenario
+
+This is the basis to discuss solution approaches concerning issues arising from neartime processing, specifically events that are processed out of sequence.
+
+## Monitoring of event processing
 
 For a given process multiple events may be produced and each event points to its predecessors, except for the initial event, which is the root of the event sequence:
 
@@ -13,7 +16,7 @@ A process progresses from event A to B to C to D to E. Every new process event k
 
 _If you need to have a mental image of a real world process you may think of a Telco selling and provisioning a fixed line product bundle (TV, Telephony, Internet): To provision the products the customer has to be created, hardware has to be sent to the install address and the networks have to be provisioned ..._
 
-### Out of sequence event processing
+## Out of sequence event processing
 Ingesting process events often times in not straight forward however. In a distributed world events may be produced in sequence, but the event emission and subsequent ingestion may be out of sequence.
 
 This can be due to several reasons. One reason for this may be **slow event producers**. 
@@ -30,9 +33,11 @@ Continuing the picture from above, the sequence of events would be broken if eve
 
 The above illustrates the broken sequence when event C has not been received yet.
 
-### Benefits of analyzing incomplete event sequences
+## Benefits of analyzing incomplete event sequences
 
-Because of the missing link between the events B and D, the process as whole, cannot be understood as of now.
+Why would it be still worth the effort to understand a process as it evolves, instead of waiting for it to stabilize?
+
+Looking back at the example above, because of the missing link between the events B and D, the process graph is disconnected and cannot be understood as whole as of now.
 However there is still information that can be gained from the two disconnected sequences. 
 
 **Monitoring** the overall systems performance is still possible. 
@@ -52,7 +57,7 @@ or when querying the process events.
 
 We will first look at the approach to maintain the process view when writing, subsequently when querying.
 
-### Maintaining process view while writing - Step by step
+## Maintaining process view while writing - Step by step
 
 Let's go back to the broken sequence and consider this scenario step by step.
 
@@ -262,9 +267,9 @@ As a result the sequence now looks the same as if it would have never been broke
 
 [Test Suite](https://github.com/marianokamp/neartime/blob/master/src/test/scala/neartime/NeartimeTestSuite.scala)
 
-### Maintaining process view while querying - Step by step
+## Maintaining process view while querying - Step by step
 
-### Contrasting both approaches
+## Contrasting both approaches
 
 Let's first look at shared characteristics of both approaches. It is necessary in both cases
 to have constant time access or better (O(1) or O(log(n))), 
@@ -272,26 +277,64 @@ given that events are usually counted in the hundred thousands or hundred millio
 impact a small number of events and even for those the majority may be reconciled within in seconds, but it may necessary to 
 consider if some events may only be processed after days or weeks or may get lost completely.
 
+FIXME: 
+
 Obviously the write oriented approach makes querying easier and vice versa. 
 The overall complexity of the query oriented approach is smaller, but given that it shifts the harder part of the 
-logic to the query side it is necessary to consider the tools and skills available on the query side. 
+logic to the query side it is necessary to consider the tools and skills available on the query side. In particular keeping a service API in mind
+to support operational systems, e.g. providing current status and history, as well as analytical access patterns using SQL. 
 
+## Futher considerations
+
+### Concurrency issues
+
+#### Report isolation
 
 ### Storing the events in HBase
 Given the distributed nature of the event emissions and anticipated large volumes of events, 
 the data would be transmitted through Kafka and stored in HBase.
 
-### Concurrency issues
-#### Report isolation
+FXIME:
+- O(1) access
+- Distributed
+- Consistency on row level
+
 
 ### Access complexity
 
-### Candidates for alternative approaches
+### Short and long term persistence
+ 
+FIXME:
+- 10 days, 10 years
+- first strike search: status/history
+- stepwise refined search: research support case
 
-- RDBMS
-- Global Sequences
-- Global fully qualified composite keys
+- Lily Indexer
+- Consolidation and compaction of events, potentially based on milestones
 
+## Candidates for alternative approaches
+
+### RDBMS
+
+FIXME:
+API complexity a little lower. Single node limitations. Connect by. ACID.
+
+### Graph DB
+
+FIXME:
+What product doesn't cling to the notion of being single node and is widely used in the industry and with professional support, 
+ideally lives in the Hadoop ecosystem. 
+
+Does it make it easier to find connect graphs? No. Still the vertices must be found, indices must be maintained.
+
+API complexity much lower. ACID.
+
+#### Global Sequences
+Holding up, killing the neartime aspect. Transfering the issue. FIXME
+
+#### Global fully qualified composite keys
+
+#### Global ID
 Using some global ID in the payload to associate events is often not straight forward. For one all systems that are part of the processing must be able
 to emit such global IDs and you may not have that much control over them. 
 But also, non-trivial processes may cross boundaries, that are not captured by a single ID. 
