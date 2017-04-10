@@ -103,11 +103,15 @@ class NeartimeTestSuite extends FunSuite with BeforeAndAfterAll {
 
     val allProcessIds = List.range(1, 5).map(id => Bytes.toString(getValue(Bytes.toBytes(1), "processes-index", "pi", "process-id")))
     assert(allProcessIds.distinct.size == 1)
-
-
   }
 
-  //test("Create three connected events with the third event doing an implicit reconciliation")
+  test("Run n-tests") {
+    val testData = GenerateTestData.createTestData(500)
+    ProcessNeartimeProcessEvents.processEvents(testData, connection)
+
+    assert(countRows("events", "ev")          == 500)
+  }
+
 
   private def getValue(id: Array[Byte], tableName: String, familyName: String, qualifier: String) = {
     val value = connection.getTable(TableName.valueOf(tableName)).get(new Get(id)).getValue(Bytes.toBytes(familyName), Bytes.toBytes(qualifier))
