@@ -1,6 +1,9 @@
-# Dealing with temporary incomplete state in a neartime scenario
+# Dealing with temporary incomplete composite state in a neartime scenario
 
-This is the basis to discuss solution approaches concerning issues arising from neartime processing, specifically events that are processed out of sequence.
+This is the basis to discuss solution approaches concerning issues arising from neartime processing,
+specifically events that are processed out of sequence and form a composite state.
+
+I am interested in feedback.
 
 ## Monitoring of event processing
 
@@ -181,7 +184,7 @@ This, however, is transparent to event E and so no special case logic is needed 
 |A|- (root)|t1|Ref-A-99|
 |B|A|t2|Ref-B-88|
 |D|C|t3|Ref-D-66
-|**E**|**C**|**t4**|**Ref-E-55**|
+|**E**|**D**|**t4**|**Ref-E-55**|
 
 
 **Processes-Index**
@@ -269,6 +272,8 @@ As a result the sequence now looks the same as if it would have never been broke
 
 ## Maintaining process view while querying - Step by step
 
+FIXME
+
 ## Contrasting both approaches
 
 Let's first look at shared characteristics of both approaches. It is necessary in both cases
@@ -301,6 +306,9 @@ FXIME:
 
 
 ### Access complexity
+
+FIXME:
+Bulk upgrade?
 
 ### Short and long term persistence
  
@@ -349,3 +357,6 @@ but at the time the underlying order numbers are not known and the state needs t
 
 ### Alternative approaches that work
 
+#### TODO
+- More structure to event, e.g. to include business process, business object, workflow step
+- More status to process, e.g. overall status
