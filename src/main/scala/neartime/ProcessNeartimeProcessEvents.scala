@@ -30,7 +30,6 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
 
     closeHBaseConnection(connection)
 
-
     sc.stop()
   }
 
@@ -47,11 +46,9 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
     def reconcile(processesTable: Table, orphanedEventsTable: Table, ev: Event) = {
       val lookupOrphanRes = orphanedEventsTable.get(new Get(Bytes.toBytes(ev.id)).setMaxVersions(1).addFamily(Bytes.toBytes("oe")))
 
-
       if (!lookupOrphanRes.isEmpty) {
 
         // Found an orphan
-        // Now do the following:
 
         // - Get the orphaned-id from the orphaned events
         val orphanedId = lookupOrphanRes.getValue(Bytes.toBytes("oe"), Bytes.toBytes("orphaned-id"))
@@ -89,10 +86,9 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
 
         // - Update process events index for affected ids, now pointing to the merge_target
 
-        affectedEventIds.foreach(affectedEventId => updateProcessIndex(_i(affectedEventId), mergeTargetProcessId))
+        affectedEventIds.foreach(affectedEventId => putProcessIndex(_i(affectedEventId), mergeTargetProcessId))
 
         // -
-
       }
 
       // - Delete orphaned event for rowkey = ev.id
@@ -107,30 +103,23 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
       mergeTargetProcessId
     }
 
-
-    def createProcessIndex(ev: Event, processRowKey: Array[Byte]) = {
-      val newIndexPut = new Put(Bytes.toBytes(ev.id)).addColumn(Bytes.toBytes("pi"), Bytes.toBytes("process-id"), processRowKey)
+    def putProcessIndex(eventId: Int, processRowKey: Array[Byte]) = {
+      val newIndexPut = new Put(Bytes.toBytes(eventId)).addColumn(Bytes.toBytes("pi"), Bytes.toBytes("process-id"), processRowKey)
       processSecondaryIndexTable.put(newIndexPut)
-      debug("Created process index for event " + ev.id + " pointing to process " + Bytes.toString(processRowKey))
+      debug("Created process index for event " + eventId + " pointing to process " + Bytes.toString(processRowKey))
     }
 
-    def updateProcessIndex(eventId: Int, processId: Array[Byte]) = {
-      val newIndexPut = new Put(Bytes.toBytes(eventId)).addColumn(Bytes.toBytes("pi"), Bytes.toBytes("process-id"), processId)
-      processSecondaryIndexTable.put(newIndexPut)
-      debug("Updated process index for event " + eventId+ " pointing to process " + Bytes.toString(processId))
+    def putProcess(eventId: Int, processRowKey: Array[Byte]) = {
+      processesTable.put(new Put(processRowKey).addColumn(Bytes.toBytes("ps"), Bytes.toBytes(eventId), EMPTY))
+      debug("Created/Updated process " + Bytes.toInt(processRowKey) + " pointing to event " + eventId)
     }
 
-    def createProcess(ev: Event, rowKey: Array[Byte]) = {
-      processesTable.put(new Put(rowKey).addColumn(Bytes.toBytes("ps"), Bytes.toBytes(ev.id), EMPTY))
-      debug("Created/Updated process " + Bytes.toInt(rowKey) + " pointing to event " + ev.id)
+    def putProcessAndIndex(eventId: Int, processRowKey: Array[Byte]) = {
+      putProcess(eventId, processRowKey)
+      putProcessIndex(eventId, processRowKey)
     }
 
-    def createProcessAndIndex(ev: Event, processRowKey: Array[Byte]) = {
-      createProcess(ev, processRowKey)
-      createProcessIndex(ev, processRowKey)
-    }
-
-    def putEventFlat(eventId: Int, predecessorId: Int) = {
+    def putEvent(eventId: Int, predecessorId: Int) = {
       val eventPut = new Put(Bytes.toBytes(eventId))
       if (predecessorId > -1)
         eventPut.addColumn(Bytes.toBytes("ev"), Bytes.toBytes("predecessor-id"), Bytes.toBytes(predecessorId))
@@ -145,12 +134,11 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
       debug("processNewEvent for event " + ev.id + ": " + ev)
 
       // insert event into events
-      putEventFlat(ev.id, ev.predecessorId)
+      putEvent(ev.id, ev.predecessorId)
 
       // event is root
       if (ev.predecessorId > -1) {
         val indexLookupRes = processSecondaryIndexTable.get(new Get(Bytes.toBytes(ev.predecessorId)).addFamily(Bytes.toBytes("pi")))
-
 
         if (!indexLookupRes.isEmpty) {
           // Found index for predecessor
@@ -162,7 +150,7 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
 
           if (!process.isEmpty) {
             // process found, maintain reference to this event then
-            val rowKey = process.getRow
+            val processRowKey = process.getRow
 
             if (dbg) {
               val qvs = process.getFamilyMap(_b("ps")).asScala.foreach {
@@ -170,12 +158,12 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
               }
             }
 
-            createProcessAndIndex(ev, rowKey)
+            putProcessAndIndex(ev.id, processRowKey)
             // first ev.id could be step or system, if unique for one process
           } else {
             // now write a new process, pointing to this event
             val processRowKey = Bytes.toBytes(createUniqueId)
-            createProcessAndIndex(ev, processRowKey)
+            putProcessAndIndex(ev.id, processRowKey)
           }
 
         } else {
@@ -189,7 +177,7 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
           // Create index and Process
 
           val rowKey = Bytes.toBytes(createUniqueId)
-          createProcessAndIndex(ev, rowKey)
+          putProcessAndIndex(ev.id, rowKey)
 
           // As we are just creating the orphan for this event,
           // there is no need to check for it, after writing this event
@@ -199,7 +187,7 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
       } else {
         // Deal with an unspecified predecessor, otherwise called root
         val rowKey = Bytes.toBytes(createUniqueId)
-        createProcessAndIndex(ev, rowKey)
+        putProcessAndIndex(ev.id, rowKey)
       }
 
       // ----
@@ -209,16 +197,12 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
       if (checkForOrphans)
         reconcile(processesTable, orphanedEventsTable, ev)
 
-
         // ---
     }
 
-
     val started = System.currentTimeMillis()
 
-
     events.foreach(processNewEvent)
-
 
     println("Before close " + (System.currentTimeMillis() - started))
 
