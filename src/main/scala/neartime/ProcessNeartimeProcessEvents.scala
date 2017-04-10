@@ -12,7 +12,7 @@ import collection.JavaConverters._
 
 object ProcessNeartimeProcessEvents extends HBaseApp{
 
-  val dbg = true
+  val dbg = false
   val EMPTY: Array[Byte]= Array(0.toByte)
 
   def debug(message: String): Unit = {
@@ -23,13 +23,11 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
   def main(args: Array[String]): Unit = {
 
     val sc: SparkContext = setupSpark
-
     val connection: Connection = openHBaseConnection
 
     processEvents(GenerateTestData.createTestData(10), connection)
 
     closeHBaseConnection(connection)
-
     sc.stop()
   }
 
@@ -88,7 +86,6 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
 
         affectedEventIds.foreach(affectedEventId => putProcessIndex(_i(affectedEventId), mergeTargetProcessId))
 
-        // -
       }
 
       // - Delete orphaned event for rowkey = ev.id
@@ -190,14 +187,11 @@ object ProcessNeartimeProcessEvents extends HBaseApp{
         putProcessAndIndex(ev.id, rowKey)
       }
 
-      // ----
-
       // Now check if this event resolves an orphan?
 
       if (checkForOrphans)
         reconcile(processesTable, orphanedEventsTable, ev)
 
-        // ---
     }
 
     val started = System.currentTimeMillis()
