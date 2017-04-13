@@ -246,7 +246,7 @@ The marker of the orphan has to be deleted, the processes merged and the referen
 
 |ID | Event IDs|
 |---|--------|
-|P1|A, B, **D**, **E**|
+|P1|A, B, **C**, **D**, **E**|
 |**~~P2~~**|**~~D~~**, **~~E~~**|
 
 
