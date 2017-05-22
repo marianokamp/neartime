@@ -20,7 +20,7 @@ A process progresses from event A to B to C to D to E. Every new process event k
 _If you need to have a mental image of a real world process you may think of a Telco selling and provisioning a fixed line product bundle (TV, Telephony, Internet): To provision the products the customer has to be created, hardware has to be sent to the install address and the networks have to be provisioned ..._
 
 ## Out of sequence event processing
-Ingesting process events often times in not straight forward however. In a distributed world events may be produced in sequence, but the event emission and subsequent ingestion may be out of sequence.
+Ingesting process events often times is not straight forward however. In a distributed world events may be produced in sequence, but the event emission and subsequent ingestion may be out of sequence.
 
 This can be due to several reasons. One reason for this may be **slow event producers**. 
 Keeping in mind that the actual focus of operational systems is to progress the process and not to report on it,
