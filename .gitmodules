@@ -1,0 +1,3 @@
+[submodule "e2e/docker/spark"]
+	path = e2e/docker/spark
+	url = https://github.com/marianokamp/spark
