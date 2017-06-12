@@ -2,7 +2,7 @@ version: "2"
 
 services:
   master:
-    build: ./spark-docker/
+    build: ./spark/
     image: spark
     command: spark-class org.apache.spark.deploy.master.Master -h master
     hostname: master
@@ -19,7 +19,7 @@ services:
       - logfiles
 
   worker:
-    build: ./spark-docker/
+    build: ./spark/
     image: spark
     command: spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
     environment:
@@ -34,7 +34,7 @@ services:
       - logfiles
 
   history:
-    build: ./spark-docker/
+    build: ./spark/
     image: spark
     command: spark-class org.apache.spark.deploy.history.HistoryServer
     hostname: history
