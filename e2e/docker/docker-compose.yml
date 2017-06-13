@@ -2,15 +2,15 @@ version: "2"
 
 services:
   master:
-    build: ./spark/
-    image: spark
+    #build: ./spark/
+    #image: spark
+    image: lateralthinking/spark
     command: spark-class org.apache.spark.deploy.master.Master -h master
     hostname: master
     environment:
       SPARK_CONF_DIR: /conf
     ports:
-      - 6066:6066
-      - 7070:7070
+      - 7077:7077
       - 8080:8080
       - 50070:50070
     volumes:
@@ -19,14 +19,15 @@ services:
       - logfiles
 
   worker:
-    build: ./spark/
-    image: spark
+    #build: ./spark/
+    #image: spark
+    image: lateralthinking/spark
     command: spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
     environment:
       SPARK_WORKER_CORES: 1
       SPARK_WORKER_MEMORY: 2g
       SPARK_CONF_DIR: /conf
-    links:
+    depends_on:
       - master
     volumes:
       - ./conf/worker:/conf
@@ -34,8 +35,9 @@ services:
       - logfiles
 
   history:
-    build: ./spark/
-    image: spark
+    #build: ./spark/
+    #image: spark
+    image: lateralthinking/spark
     command: spark-class org.apache.spark.deploy.history.HistoryServer
     hostname: history
     environment:
@@ -49,9 +51,7 @@ services:
     volumes_from:
       - logfiles
 
-
-
   logfiles:
-    image: alpine 
+    image: alpine
     volumes:
       - /tmp/spark-events
