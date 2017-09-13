@@ -1,14 +1,10 @@
-package test
-
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
-import org.apache.spark.SparkConf
+import org.apache.spark.{SparkConf, SparkContext}
 
 object TestApp {
 
   def main(args: Array[String]): Unit = {
 
-    println("------------- start! --------------------------")
+    println("------------- start! -------------------------- "+args.toString)
     val words = "one two three one two three four five six"
     val conf = new SparkConf().setAppName("Test")
 
